@@ -7,24 +7,88 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 package com.parse.starter;
+
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Toast;
 
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
+import com.parse.LogInCallback;
 import com.parse.ParseAnalytics;
+import com.parse.ParseAnonymousUtils;
+import com.parse.ParseException;
+import com.parse.ParseUser;
+
+import java.util.Objects;
 
 
 public class MainActivity extends AppCompatActivity {
 
+    private SwitchCompat riderDriverSwitch;
+    private Button getStartedButton;
+    private String userType;
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-    
-    ParseAnalytics.trackAppOpenedInBackground(getIntent());
-  }
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+        checkIfUserLoggedIn();
 
+        setUpClickListeners();
+        ParseAnalytics.trackAppOpenedInBackground(getIntent());
+    }
+
+    private void setUpClickListeners() {
+        riderDriverSwitch = findViewById(R.id.rider_driver_switch);
+        getStartedButton = findViewById(R.id.get_started_button);
+
+        riderDriverSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    userType = getString(R.string.driver);
+                } else {
+                    userType = getString(R.string.rider);
+                }
+            }
+        });
+
+        getStartedButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(MainActivity.this, "Welcome, " + userType, Toast.LENGTH_SHORT).show();
+                ParseUser.getCurrentUser().put(Constants.USER_TYPE_KEY, userType);
+            }
+        });
+    }
+
+    private void checkIfUserLoggedIn() {
+        if (ParseUser.getCurrentUser() == null) {
+            ParseAnonymousUtils.logIn(new LogInCallback() {
+                @Override
+                public void done(ParseUser user, ParseException e) {
+                    if (e == null) {
+                        Toast.makeText(MainActivity.this, getString(R.string.login_successful), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+          userType = getString(R.string.rider);
+        } else {
+            if (ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY) != null) {
+                Log.i("Redirecting as", Objects.requireNonNull(ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY)));
+            }
+        }
+    }
 }

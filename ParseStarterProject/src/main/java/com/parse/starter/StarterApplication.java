@@ -21,43 +21,41 @@ import com.parse.SaveCallback;
 
 public class StarterApplication extends Application {
 
-  @Override
-  public void onCreate() {
-    super.onCreate();
+    @Override
+    public void onCreate() {
+        super.onCreate();
 
-    // Enable Local Datastore.
-    Parse.enableLocalDatastore(this);
+        // Enable Local Datastore.
+        Parse.enableLocalDatastore(this);
 
-    // Add your initialization code here
-    Parse.initialize(new Parse.Configuration.Builder(getApplicationContext())
-            .applicationId(getString(R.string.appId))
-            .clientKey(getString(R.string.clientMasterKey))
-            .server(getString(R.string.serverPath))
-            .build()
-    );
+        // Add your initialization code here
+        Parse.initialize(new Parse.Configuration.Builder(getApplicationContext())
+                .applicationId(getString(R.string.appId))
+                .clientKey(getString(R.string.clientMasterKey))
+                .server(getString(R.string.serverUrl))
+                .build()
+        );
 
-    ParseObject object = new ParseObject("ExampleObject");
-    object.put("myNumber", "123");
-    object.put("myString", "rob");
+//    ParseObject object = new ParseObject("ExampleObject");
+//    object.put("myNumber", "123");
+//    object.put("myString", "rob");
+//
+//    object.saveInBackground(new SaveCallback () {
+//      @Override
+//      public void done(ParseException ex) {
+//        if (ex == null) {
+//          Log.i("Parse Result", "Successful!");
+//        } else {
+//          Log.i("Parse Result", "Failed" + ex.toString());
+//        }
+//      }
+//    });
 
-    object.saveInBackground(new SaveCallback () {
-      @Override
-      public void done(ParseException ex) {
-        if (ex == null) {
-          Log.i("Parse Result", "Successful!");
-        } else {
-          Log.i("Parse Result", "Failed" + ex.toString());
-        }
-      }
-    });
+//        ParseUser.enableAutomaticUser();
 
-
-    ParseUser.enableAutomaticUser();
-
-    ParseACL defaultACL = new ParseACL();
-    defaultACL.setPublicReadAccess(true);
-    defaultACL.setPublicWriteAccess(true);
-    ParseACL.setDefaultACL(defaultACL, true);
-
-  }
+        ParseACL defaultACL = new ParseACL();
+        defaultACL.setPublicReadAccess(true);
+        defaultACL.setPublicWriteAccess(true);
+        ParseACL.setDefaultACL(defaultACL, true);
+    }
 }
