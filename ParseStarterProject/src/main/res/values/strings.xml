@@ -17,4 +17,6 @@
     <string name="driver">Driver</string>
     <string name="get_started">Get started</string>
     <string name="login_successful">You have successfully logged in</string>
+    <string name="location_permission_denied">Location permission denied</string>
+    <string name="location_permission_granted">Location permission granted</string>
 </resources>

@@ -8,6 +8,7 @@
  */
 package com.parse.starter;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
+        userType = getString(R.string.rider);
         checkIfUserLoggedIn();
 
         setUpClickListeners();
@@ -66,8 +68,11 @@ public class MainActivity extends AppCompatActivity {
         getStartedButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Welcome, " + userType, Toast.LENGTH_SHORT).show();
                 ParseUser.getCurrentUser().put(Constants.USER_TYPE_KEY, userType);
+                if (userType.equals(getString(R.string.rider))) {
+                    Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
+                    startActivity(goToRiderActivityIntent);
+                }
             }
         });
     }
@@ -84,10 +89,13 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
-          userType = getString(R.string.rider);
         } else {
             if (ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY) != null) {
-                Log.i("Redirecting as", Objects.requireNonNull(ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY)));
+                userType = ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY);
+                if (userType != null && userType.equals(getString(R.string.rider))) {
+                    Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
+                    startActivity(goToRiderActivityIntent);
+                }
             }
         }
     }
