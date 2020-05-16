@@ -216,6 +216,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
     private void updateMap(LatLng latLng) {
         if (mMap != null) {
+            mMap.clear();
             mMap.addMarker(new MarkerOptions().position(latLng).title(getString(R.string.your_location))
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));

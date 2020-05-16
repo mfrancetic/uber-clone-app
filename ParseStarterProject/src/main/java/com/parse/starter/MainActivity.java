@@ -25,6 +25,7 @@ import com.parse.ParseAnalytics;
 import com.parse.ParseAnonymousUtils;
 import com.parse.ParseException;
 import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
 import java.util.Objects;
 
@@ -69,10 +70,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ParseUser.getCurrentUser().put(Constants.USER_TYPE_KEY, userType);
-                if (userType.equals(getString(R.string.rider))) {
-                    Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
-                    startActivity(goToRiderActivityIntent);
-                }
+                ParseUser.getCurrentUser().saveInBackground(new SaveCallback() {
+                    @Override
+                    public void done(ParseException e) {
+                        if (e == null) {
+                            if (userType.equals(getString(R.string.rider))) {
+                                Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
+                                startActivity(goToRiderActivityIntent);
+                            }
+                        } else {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
             }
         });
     }
