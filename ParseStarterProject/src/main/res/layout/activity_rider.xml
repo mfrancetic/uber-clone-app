@@ -6,4 +6,13 @@
     android:name="com.google.android.gms.maps.SupportMapFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".RiderActivity"></fragment>
+    tools:context=".RiderActivity">
+
+    <Button
+        android:id="@+id/call_cancel_uber_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|bottom"
+        android:padding="@dimen/default_padding"
+        android:text="@string/call_uber" />
+</fragment>

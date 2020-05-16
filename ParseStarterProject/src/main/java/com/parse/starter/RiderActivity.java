@@ -12,6 +12,9 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -21,6 +24,16 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.parse.FindCallback;
+import com.parse.Parse;
+import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
+
+import java.util.List;
 
 import static com.parse.starter.PermissionUtils.FINE_LOCATION_PERMISSION_REQUEST_CODE;
 import static com.parse.starter.PermissionUtils.MINIMUM_LOCATION_UPDATE_TIME;
@@ -30,6 +43,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     private GoogleMap mMap;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    private Button callCancelUberButton;
+    private Location lastKnownLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +54,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
 
+        callCancelUberButton = findViewById(R.id.call_cancel_uber_button);
         mapFragment.getMapAsync(this);
     }
 
@@ -50,11 +66,85 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             }
             enableMyLocation();
             setupLocationManagerAndListener();
+            displayButton();
         } else {
             // Permission to access the location is missing. Show rationale and request permission
             PermissionUtils.requestPermission(this, FINE_LOCATION_PERMISSION_REQUEST_CODE,
                     Manifest.permission.ACCESS_FINE_LOCATION, true);
         }
+    }
+
+    private void displayButton() {
+        callCancelUberButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isRequestActive()) {
+                    cancelUber();
+                } else {
+                    callUber();
+                }
+            }
+        });
+//        if (isRequestActive()) {
+        callCancelUberButton.setVisibility(View.VISIBLE);
+//        } else {
+//            callCancelUberButton.setVisibility(View.GONE);
+//        }
+    }
+
+    private void callUber() {
+        final ParseObject request = new ParseObject(Constants.REQUEST_TABLE_KEY);
+
+        request.put(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername());
+        request.put(Constants.LOCATION_KEY, new ParseGeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
+        request.put(Constants.REQUEST_ACTIVE_KEY, true);
+        request.saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    Toast.makeText(RiderActivity.this, getString(R.string.uber_called),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(RiderActivity.this, e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        callCancelUberButton.setText(getString(R.string.cancel_uber));
+    }
+
+    private void cancelUber() {
+        ParseQuery<ParseObject> query = ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY);
+        query.whereEqualTo(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername());
+        query.whereEqualTo(Constants.LOCATION_KEY, new ParseGeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
+        query.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null && objects != null && objects.size() > 0) {
+                    for (ParseObject object : objects) {
+                        if (object.getBoolean(Constants.REQUEST_ACTIVE_KEY)) {
+                            object.put(Constants.REQUEST_ACTIVE_KEY, false);
+                            object.saveInBackground(new SaveCallback() {
+                                @Override
+                                public void done(ParseException e) {
+                                    if (e == null) {
+                                        Toast.makeText(RiderActivity.this, getString(R.string.uber_canceled),
+                                                Toast.LENGTH_SHORT).show();
+                                        callCancelUberButton.setText(getString(R.string.call_uber));
+                                    } else {
+                                        Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT)
+                                                .show();
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } else if (e != null) {
+                    Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT)
+                            .show();
+                }
+            }
+        });
     }
 
     /**
@@ -70,11 +160,6 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         checkForPermission();
-
-        // Add a marker in Sydney and move the camera
-//        LatLng sydney = new LatLng(-34, 151);
-//        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
     @Override
@@ -93,13 +178,14 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             // Permission was denied. Display an error message
             Toast.makeText(this, getString(R.string.location_permission_denied),
                     Toast.LENGTH_SHORT).show();
+            callCancelUberButton.setVisibility(View.INVISIBLE);
         }
     }
 
     private void setupLocationManagerAndListener() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MINIMUM_LOCATION_UPDATE_TIME, 0, locationListener);
-            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
                 updateMap(new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
             }
@@ -111,14 +197,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-//                if (location != null) {
-//                    updateMap(location);
-//                } else {
-//
-                Toast.makeText(RiderActivity.this, location.getLatitude() + " " + location.getLongitude(),
-                        Toast.LENGTH_SHORT).show();
                 updateMap(new LatLng(location.getLatitude(), location.getLongitude()));
-//                }
             }
 
             @Override
@@ -137,9 +216,13 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
     private void updateMap(LatLng latLng) {
         if (mMap != null) {
-            mMap.addMarker(new MarkerOptions().position(latLng)
+            mMap.addMarker(new MarkerOptions().position(latLng).title(getString(R.string.your_location))
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
         }
+    }
+
+    private boolean isRequestActive() {
+        return callCancelUberButton.getText().equals(getString(R.string.cancel_uber));
     }
 }

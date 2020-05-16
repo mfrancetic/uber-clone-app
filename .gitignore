@@ -84,3 +84,4 @@ lint/tmp/
 # lint/reports/
 
 secret_strings.xml
+google_maps_api.xml
