@@ -24,6 +24,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.parse.DeleteCallback;
 import com.parse.FindCallback;
 import com.parse.Parse;
 import com.parse.ParseException;
@@ -45,6 +46,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     private LocationListener locationListener;
     private Button callCancelUberButton;
     private Location lastKnownLocation;
+    private boolean requestIsActive = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +57,23 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                 .findFragmentById(R.id.map);
 
         callCancelUberButton = findViewById(R.id.call_cancel_uber_button);
+
+        checkIfRequestIsActive();
         mapFragment.getMapAsync(this);
+    }
+
+    private void checkIfRequestIsActive() {
+        ParseQuery<ParseObject> query = ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY);
+        query.whereEqualTo(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername());
+        query.findInBackground(new FindCallback<ParseObject>() {
+            @Override
+            public void done(List<ParseObject> objects, ParseException e) {
+                if (e == null && objects != null && objects.size() > 0) {
+                    requestIsActive = true;
+                    callCancelUberButton.setText(getString(R.string.cancel_uber));
+                }
+            }
+        });
     }
 
     private void checkForPermission() {
@@ -78,18 +96,14 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         callCancelUberButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isRequestActive()) {
+                if (requestIsActive) {
                     cancelUber();
                 } else {
                     callUber();
                 }
             }
         });
-//        if (isRequestActive()) {
         callCancelUberButton.setVisibility(View.VISIBLE);
-//        } else {
-//            callCancelUberButton.setVisibility(View.GONE);
-//        }
     }
 
     private void callUber() {
@@ -116,28 +130,25 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     private void cancelUber() {
         ParseQuery<ParseObject> query = ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY);
         query.whereEqualTo(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername());
-        query.whereEqualTo(Constants.LOCATION_KEY, new ParseGeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
         query.findInBackground(new FindCallback<ParseObject>() {
             @Override
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null && objects != null && objects.size() > 0) {
                     for (ParseObject object : objects) {
-                        if (object.getBoolean(Constants.REQUEST_ACTIVE_KEY)) {
-                            object.put(Constants.REQUEST_ACTIVE_KEY, false);
-                            object.saveInBackground(new SaveCallback() {
-                                @Override
-                                public void done(ParseException e) {
-                                    if (e == null) {
-                                        Toast.makeText(RiderActivity.this, getString(R.string.uber_canceled),
-                                                Toast.LENGTH_SHORT).show();
-                                        callCancelUberButton.setText(getString(R.string.call_uber));
-                                    } else {
-                                        Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT)
-                                                .show();
-                                    }
+                        object.deleteInBackground(new DeleteCallback() {
+                            @Override
+                            public void done(ParseException e) {
+                                if (e == null) {
+                                    Toast.makeText(RiderActivity.this, getString(R.string.uber_canceled),
+                                            Toast.LENGTH_SHORT).show();
+                                    callCancelUberButton.setText(getString(R.string.call_uber));
+                                    requestIsActive = false;
+                                } else {
+                                    Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT)
+                                            .show();
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
                 } else if (e != null) {
                     Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT)
@@ -221,9 +232,5 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
         }
-    }
-
-    private boolean isRequestActive() {
-        return callCancelUberButton.getText().equals(getString(R.string.cancel_uber));
     }
 }
