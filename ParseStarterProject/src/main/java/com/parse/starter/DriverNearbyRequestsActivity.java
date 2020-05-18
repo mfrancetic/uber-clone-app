@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.parse.FindCallback;
@@ -41,6 +42,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
     private ParseGeoPoint currentGeoPoint;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    private TextView emptyTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,21 +50,27 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_driver_nearby_requests);
 
         setTitle(getString(R.string.nearby_requests));
+        emptyTextView = findViewById(R.id.nearby_requests_empty_text_view);
+
         setupListView();
         checkForPermission();
     }
 
     private void getNearbyRequestsFromDatabase() {
         ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY)
+                .setLimit(10)
                 .whereNear(Constants.LOCATION_KEY, currentGeoPoint)
                 .findInBackground(new FindCallback<ParseObject>() {
                     @Override
                     public void done(List<ParseObject> objects, ParseException e) {
-                        if (e == null && objects != null && objects.size() > 0) {
+                        nearbyRequestsGeopoints.clear();
+                        nearbyRequestsStrings.clear();
+
+                        if (e == null && objects.size() > 0) {
                             for (ParseObject object : objects) {
                                 ParseGeoPoint geoPoint = object.getParseGeoPoint(Constants.LOCATION_KEY);
                                 if (geoPoint != null) {
-                                    double distance = geoPoint.distanceInKilometersTo(currentGeoPoint);
+                                    double distance = currentGeoPoint.distanceInKilometersTo(geoPoint);
                                     DecimalFormat format = new DecimalFormat("#.##");
                                     nearbyRequestsStrings.add(format.format(distance) + " " + getString(R.string.kilometer));
                                     nearbyRequestsGeopoints.add(geoPoint);
@@ -72,6 +80,8 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
                         } else if (e != null) {
                             Toast.makeText(DriverNearbyRequestsActivity.this, e.getMessage(),
                                     Toast.LENGTH_SHORT).show();
+                        } else {
+                            emptyTextView.setVisibility(View.VISIBLE);
                         }
                     }
                 });
@@ -80,6 +90,8 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
     private void setupListView() {
         nearbyRequestsStrings = new ArrayList<>();
         nearbyRequestsGeopoints = new ArrayList<>();
+
+        emptyTextView.setVisibility(View.GONE);
 
         ListView listView = findViewById(R.id.nearby_requests_list_view);
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, nearbyRequestsStrings);
