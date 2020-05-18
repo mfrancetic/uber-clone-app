@@ -9,6 +9,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -17,12 +18,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.DeleteCallback;
 import com.parse.FindCallback;
@@ -33,7 +37,9 @@ import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.parse.starter.PermissionUtils.FINE_LOCATION_PERMISSION_REQUEST_CODE;
 import static com.parse.starter.PermissionUtils.MINIMUM_LOCATION_UPDATE_TIME;
@@ -47,6 +53,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     private Button logoutButton;
     private Location lastKnownLocation;
     private boolean requestIsActive = false;
+    private LatLng driverLocation;
+    private LatLng riderLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,7 +70,9 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         setupLogoutButtonOnClickListener();
 
         checkIfRequestIsActive();
-        mapFragment.getMapAsync(this);
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
     }
 
     private void setupLogoutButtonOnClickListener() {
@@ -132,6 +142,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                 if (e == null) {
                     Toast.makeText(RiderActivity.this, getString(R.string.uber_called),
                             Toast.LENGTH_SHORT).show();
+                    getRequestUpdates();
                 } else {
                     Toast.makeText(RiderActivity.this, e.getMessage(),
                             Toast.LENGTH_SHORT).show();
@@ -139,6 +150,42 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             }
         });
         callCancelUberButton.setText(getString(R.string.cancel_uber));
+    }
+
+    private void getRequestUpdates() {
+        ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY)
+                .whereMatches(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername())
+                .findInBackground(new FindCallback<ParseObject>() {
+                    @Override
+                    public void done(List<ParseObject> objects, ParseException e) {
+                      if (objects.size() > 0) {
+                            for (ParseObject object : objects) {
+                                if (object.get(Constants.DRIVER_USERNAME_KEY) != null) {
+                                    getDriverLocation(object.getString(Constants.DRIVER_USERNAME_KEY));
+                                }
+                            }
+                        }
+                    }
+                });
+    }
+
+    private void getDriverLocation(String driverUsername) {
+        ParseUser.getQuery()
+                .whereMatches(Constants.USERNAME_KEY, driverUsername)
+                .findInBackground(new FindCallback<ParseUser>() {
+                    @Override
+                    public void done(List<ParseUser> users, ParseException e) {
+                        if (e == null && users.size() > 0) {
+                            for (ParseUser user : users) {
+                                if (user.getParseGeoPoint(Constants.LOCATION_KEY) != null) {
+                                    driverLocation = new LatLng(Objects.requireNonNull(user.getParseGeoPoint(Constants.LOCATION_KEY)).getLatitude(),
+                                            Objects.requireNonNull(user.getParseGeoPoint(Constants.LOCATION_KEY)).getLongitude());
+                                    updateMap(riderLocation, driverLocation);
+                                }
+                            }
+                        }
+                    }
+                });
     }
 
     private void cancelUber() {
@@ -212,7 +259,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, MINIMUM_LOCATION_UPDATE_TIME, 0, locationListener);
             lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
-                updateMap(new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
+                riderLocation = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                updateMap(riderLocation, driverLocation);
             }
         }
     }
@@ -222,7 +270,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                updateMap(new LatLng(location.getLatitude(), location.getLongitude()));
+                riderLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                updateMap(riderLocation, driverLocation);
             }
 
             @Override
@@ -239,12 +288,37 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         };
     }
 
-    private void updateMap(LatLng latLng) {
+    private void updateMap(LatLng riderLatLng, LatLng driverLatLng) {
         if (mMap != null) {
             mMap.clear();
-            mMap.addMarker(new MarkerOptions().position(latLng).title(getString(R.string.your_location))
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+
+            List<Marker> markers = new ArrayList<>();
+
+            if (driverLatLng != null) {
+                Marker driverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title(getString(R.string.your_location))
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                markers.add(driverMarker);
+            }
+
+            if (riderLatLng != null) {
+                Marker riderMarker = mMap.addMarker(new MarkerOptions().position(riderLatLng).title(getString(R.string.rider_location))
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                markers.add(riderMarker);
+            }
+
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+            for (Marker marker : markers) {
+                builder.include(marker.getPosition());
+            }
+            LatLngBounds bounds = builder.build();
+
+            int padding = 100; // offset from edges of the map in pixels
+            int width = getResources().getDisplayMetrics().widthPixels;
+            int height = getResources().getDisplayMetrics().heightPixels;
+
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+            mMap.moveCamera(cameraUpdate);
         }
     }
 }
