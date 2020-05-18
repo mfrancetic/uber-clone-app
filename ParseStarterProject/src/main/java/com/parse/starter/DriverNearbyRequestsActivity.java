@@ -6,7 +6,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,15 +15,15 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewStructure;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.parse.FindCallback;
-import com.parse.ParseAnonymousUtils;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -41,7 +40,7 @@ import static com.parse.starter.PermissionUtils.MINIMUM_LOCATION_UPDATE_TIME;
 
 public class DriverNearbyRequestsActivity extends AppCompatActivity {
 
-    private ArrayAdapter arrayAdapter;
+    private BaseAdapter adapter;
     private List<String> nearbyRequestsStrings;
     private List<ParseGeoPoint> nearbyRequestsGeopoints;
     private ParseGeoPoint currentGeoPoint;
@@ -84,7 +83,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
                                     nearbyRequestsStrings.add(format.format(distance) + " " + getString(R.string.kilometer));
                                     nearbyRequestsGeopoints.add(geoPoint);
                                     riderUsernames.add(object.getString(Constants.USERNAME_KEY));
-                                    arrayAdapter.notifyDataSetChanged();
+                                    adapter.notifyDataSetChanged();
                                 }
                             }
                         } else if (e != null) {
@@ -104,8 +103,8 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
         emptyTextView.setVisibility(View.GONE);
 
         ListView listView = findViewById(R.id.nearby_requests_list_view);
-        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, nearbyRequestsStrings);
-        listView.setAdapter(arrayAdapter);
+        adapter = new NearbyRequestsAdapter(this, nearbyRequestsStrings);
+        listView.setAdapter(adapter);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

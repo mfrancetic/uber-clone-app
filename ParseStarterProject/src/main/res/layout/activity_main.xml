@@ -6,7 +6,8 @@
   ~ LICENSE file in the root directory of this source tree. An additional grant
   ~ of patent rights can be found in the PATENTS file in the same directory.
   -->
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -22,7 +23,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/logo_image"
-        android:padding="@dimen/default_padding"
+        android:layout_margin="@dimen/padding_large"
         android:src="@mipmap/ic_launcher"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -34,6 +35,8 @@
         android:layout_height="wrap_content"
         android:paddingRight="@dimen/default_padding"
         android:text="@string/rider"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        android:textColor="@color/colorTextPrimary"
         app:layout_constraintBottom_toBottomOf="@id/rider_driver_switch"
         app:layout_constraintEnd_toStartOf="@id/rider_driver_switch"
         app:layout_constraintTop_toTopOf="@id/rider_driver_switch" />
@@ -43,6 +46,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="false"
+        android:padding="@dimen/padding_large"
         android:textOff="@string/driver"
         android:textOn="@string/rider"
         app:layout_constraintEnd_toEndOf="parent"
@@ -55,16 +59,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/default_padding"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         android:text="@string/driver"
+        android:textColor="@color/colorTextPrimary"
         app:layout_constraintBottom_toBottomOf="@id/rider_driver_switch"
         app:layout_constraintStart_toEndOf="@id/rider_driver_switch"
         app:layout_constraintTop_toTopOf="@id/rider_driver_switch" />
 
     <Button
         android:id="@+id/get_started_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/default_padding"
+        style="@style/ButtonStyle"
         android:text="@string/get_started"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

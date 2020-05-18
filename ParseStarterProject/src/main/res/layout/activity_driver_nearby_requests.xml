@@ -22,6 +22,6 @@
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:listitem="@android:layout/simple_list_item_1" />
+        tools:listitem="@layout/nearby_requests_list_item" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
