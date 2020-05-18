@@ -29,4 +29,5 @@
     <string name="title_activity_driver_request">Map</string>
     <string name="accept_request">Accept Request</string>
     <string name="rider_location">Rider location</string>
+    <string name="logout">Logout</string>
 </resources>

@@ -7,13 +7,13 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -26,7 +26,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.DeleteCallback;
 import com.parse.FindCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -45,6 +44,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     private LocationManager locationManager;
     private LocationListener locationListener;
     private Button callCancelUberButton;
+    private Button logoutButton;
     private Location lastKnownLocation;
     private boolean requestIsActive = false;
 
@@ -57,9 +57,23 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                 .findFragmentById(R.id.map);
 
         callCancelUberButton = findViewById(R.id.call_cancel_uber_button);
+        logoutButton = findViewById(R.id.logout_button);
+
+        setupLogoutButtonOnClickListener();
 
         checkIfRequestIsActive();
         mapFragment.getMapAsync(this);
+    }
+
+    private void setupLogoutButtonOnClickListener() {
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ParseUser.logOut();
+                Intent intent = new Intent(RiderActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     private void checkIfRequestIsActive() {
@@ -84,7 +98,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             }
             enableMyLocation();
             setupLocationManagerAndListener();
-            displayButton();
+            displayCallCancelUberButton();
         } else {
             // Permission to access the location is missing. Show rationale and request permission
             PermissionUtils.requestPermission(this, FINE_LOCATION_PERMISSION_REQUEST_CODE,
@@ -92,7 +106,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
         }
     }
 
-    private void displayButton() {
+    private void displayCallCancelUberButton() {
         callCancelUberButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
