@@ -14,6 +14,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -22,10 +23,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.parse.FindCallback;
+import com.parse.ParseAnonymousUtils;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -128,6 +132,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
             @Override
             public void onLocationChanged(Location location) {
                 currentGeoPoint = new ParseGeoPoint(location.getLatitude(), location.getLongitude());
+                saveCurrentLocationToDatabase(currentGeoPoint);
                 getNearbyRequestsFromDatabase();
             }
 
@@ -143,6 +148,20 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
             public void onProviderDisabled(String s) {
             }
         };
+    }
+
+    private void saveCurrentLocationToDatabase(final ParseGeoPoint currentGeoPoint) {
+        ParseUser.getCurrentUser().put(Constants.LOCATION_KEY, currentGeoPoint);
+        ParseUser.getCurrentUser().saveInBackground(new SaveCallback() {
+            @Override
+            public void done(ParseException e) {
+                if (e == null) {
+                    Log.i("Current location", currentGeoPoint.toString());
+                } else {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
@@ -170,6 +189,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
             Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
                 currentGeoPoint = new ParseGeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                saveCurrentLocationToDatabase(currentGeoPoint);
                 getNearbyRequestsFromDatabase();
             }
         }
@@ -186,4 +206,5 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
                     Manifest.permission.ACCESS_FINE_LOCATION, true);
         }
     }
+
 }

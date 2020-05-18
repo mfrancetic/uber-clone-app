@@ -5,10 +5,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 
+import com.parse.ParseGeoPoint;
+
 class PermissionUtils {
 
     public static final int FINE_LOCATION_PERMISSION_REQUEST_CODE = 200;
     public static final int MINIMUM_LOCATION_UPDATE_TIME = 30000;
+    private static ParseGeoPoint currentGeoPoint;
 
     public static boolean isPermissionGranted(int requestCode, int[] grantResults, String accessFineLocation) {
         if (accessFineLocation.equals(Manifest.permission.ACCESS_FINE_LOCATION) && requestCode == FINE_LOCATION_PERMISSION_REQUEST_CODE) {
