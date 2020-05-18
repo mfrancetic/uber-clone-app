@@ -8,8 +8,10 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -17,14 +19,20 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.parse.ParseGeoPoint;
+
+import java.io.BufferedInputStream;
+import java.util.ArrayList;
 
 public class DriverRequestActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private LatLng driverLocation;
     private LatLng riderLocation;
     private Button acceptRequestButton;
+    private SupportMapFragment mapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,13 +42,15 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
         acceptRequestButton = findViewById(R.id.accept_request_button);
         acceptRequestButton.setVisibility(View.GONE);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        assert mapFragment != null;
+         mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map_driver);
 
         getDriverAndRiderLocation();
         setButtonOnClickListener();
-        mapFragment.getMapAsync(this);
+
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
     }
 
     private void setButtonOnClickListener() {
@@ -86,12 +96,26 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
     public void onMapReady(GoogleMap googleMap) {
         if (googleMap != null) {
             googleMap.clear();
-            googleMap.addMarker(new MarkerOptions().position(driverLocation).title(getString(R.string.your_location))
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(driverLocation, 15));
 
-            googleMap.addMarker(new MarkerOptions().position(riderLocation).title(getString(R.string.rider_location))
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+            ArrayList<Marker> markers = new ArrayList<>();
+            markers.add(googleMap.addMarker(new MarkerOptions().position(driverLocation).title(getString(R.string.your_location))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))));
+            markers.add(googleMap.addMarker(new MarkerOptions().position(riderLocation).title(getString(R.string.rider_location))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))));
+
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+            for (Marker marker : markers) {
+                builder.include(marker.getPosition());
+            }
+            LatLngBounds bounds = builder.build();
+
+            int padding = 100; // offset from edges of the map in pixels
+            int width = getResources().getDisplayMetrics().widthPixels;
+            int height = getResources().getDisplayMetrics().heightPixels;
+
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+            googleMap.moveCamera(cameraUpdate);
 
             acceptRequestButton.setVisibility(View.VISIBLE);
         }
