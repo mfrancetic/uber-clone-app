@@ -157,6 +157,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                             getRequestUpdates();
                         }
                     }, 5000);
+                    requestIsActive = true;
                 } else {
                     Toast.makeText(RiderActivity.this, e.getMessage(),
                             Toast.LENGTH_SHORT).show();
@@ -174,9 +175,9 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                     @Override
                     public void done(List<ParseObject> objects, ParseException e) {
                         if (e == null && objects.size() > 0) {
+                            isDriverActive = true;
                             for (ParseObject object : objects) {
                                 hideCallUberButton();
-                                isDriverActive = true;
                                 getDriverLocation(object.getString(Constants.DRIVER_USERNAME_KEY));
                                 informUser();
                             }
@@ -291,7 +292,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             return;
         }
 
-        if (PermissionUtils.isPermissionGranted(requestCode, grantResults, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+        if (PermissionUtils.isPermissionGranted(requestCode, grantResults, Manifest.permission.ACCESS_FINE_LOCATION)) {
             // Enable the my location layer if the permission has been granted.
             enableMyLocation();
             setupLocationManagerAndListener();
