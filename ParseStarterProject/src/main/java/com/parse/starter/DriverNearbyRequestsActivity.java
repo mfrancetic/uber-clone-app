@@ -62,6 +62,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
         ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY)
                 .setLimit(10)
                 .whereNear(Constants.LOCATION_KEY, currentGeoPoint)
+                .whereDoesNotExist(Constants.DRIVER_USERNAME_KEY)
                 .findInBackground(new FindCallback<ParseObject>() {
                     @Override
                     public void done(List<ParseObject> objects, ParseException e) {
