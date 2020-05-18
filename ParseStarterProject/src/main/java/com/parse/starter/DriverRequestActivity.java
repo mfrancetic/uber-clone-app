@@ -5,6 +5,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.content.Intent;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -46,9 +47,16 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
         acceptRequestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                navigateToDirections();
             }
         });
+    }
+
+    private void navigateToDirections() {
+        Uri intentUri = Uri.parse("google.navigation:q=" + riderLocation.latitude + " , " + riderLocation.longitude);
+        Intent intent = new Intent(Intent.ACTION_VIEW, intentUri);
+        intent.setPackage("com.google.android.apps.maps");
+        startActivity(intent);
     }
 
     private void getDriverAndRiderLocation() {
