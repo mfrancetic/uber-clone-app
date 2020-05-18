@@ -16,6 +16,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewStructure;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -63,6 +64,9 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
     }
 
     private void getNearbyRequestsFromDatabase() {
+        nearbyRequestsGeopoints.clear();
+        nearbyRequestsStrings.clear();
+
         ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY)
                 .setLimit(10)
                 .whereNear(Constants.LOCATION_KEY, currentGeoPoint)
@@ -70,13 +74,11 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
                 .findInBackground(new FindCallback<ParseObject>() {
                     @Override
                     public void done(List<ParseObject> objects, ParseException e) {
-                        nearbyRequestsGeopoints.clear();
-                        nearbyRequestsStrings.clear();
-
                         if (e == null && objects.size() > 0) {
                             for (ParseObject object : objects) {
                                 ParseGeoPoint geoPoint = object.getParseGeoPoint(Constants.LOCATION_KEY);
                                 if (geoPoint != null) {
+                                    emptyTextView.setVisibility(View.GONE);
                                     double distance = currentGeoPoint.distanceInKilometersTo(geoPoint);
                                     DecimalFormat format = new DecimalFormat("#.##");
                                     nearbyRequestsStrings.add(format.format(distance) + " " + getString(R.string.kilometer));

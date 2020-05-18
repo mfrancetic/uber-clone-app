@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -14,8 +15,10 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -37,6 +40,7 @@ import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -55,6 +59,9 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
     private boolean requestIsActive = false;
     private LatLng driverLocation;
     private LatLng riderLocation;
+    private Handler handler = new Handler();
+    private TextView infoTextView;
+    private boolean isDriverActive = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +73,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
         callCancelUberButton = findViewById(R.id.call_cancel_uber_button);
         logoutButton = findViewById(R.id.logout_button);
+        infoTextView = findViewById(R.id.info_text_view);
 
         setupLogoutButtonOnClickListener();
 
@@ -94,6 +102,7 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
             public void done(List<ParseObject> objects, ParseException e) {
                 if (e == null && objects != null && objects.size() > 0) {
                     requestIsActive = true;
+                    getRequestUpdates();
                     callCancelUberButton.setText(getString(R.string.cancel_uber));
                 }
             }
@@ -142,7 +151,12 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                 if (e == null) {
                     Toast.makeText(RiderActivity.this, getString(R.string.uber_called),
                             Toast.LENGTH_SHORT).show();
-                    getRequestUpdates();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            getRequestUpdates();
+                        }
+                    }, 5000);
                 } else {
                     Toast.makeText(RiderActivity.this, e.getMessage(),
                             Toast.LENGTH_SHORT).show();
@@ -154,22 +168,54 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
     private void getRequestUpdates() {
         ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY)
-                .whereMatches(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername())
+                .whereEqualTo(Constants.USERNAME_KEY, ParseUser.getCurrentUser().getUsername())
+                .whereExists(Constants.DRIVER_USERNAME_KEY)
                 .findInBackground(new FindCallback<ParseObject>() {
                     @Override
                     public void done(List<ParseObject> objects, ParseException e) {
-                      if (objects.size() > 0) {
+                        if (e == null && objects.size() > 0) {
                             for (ParseObject object : objects) {
-                                if (object.get(Constants.DRIVER_USERNAME_KEY) != null) {
-                                    getDriverLocation(object.getString(Constants.DRIVER_USERNAME_KEY));
-                                }
+                                hideCallUberButton();
+                                isDriverActive = true;
+                                getDriverLocation(object.getString(Constants.DRIVER_USERNAME_KEY));
+                                informUser();
                             }
                         }
                     }
                 });
     }
 
-    private void getDriverLocation(String driverUsername) {
+    private void hideCallUberButton() {
+        callCancelUberButton.setVisibility(View.GONE);
+    }
+
+    private void informUser() {
+        if (riderLocation != null && driverLocation != null) {
+            ParseGeoPoint riderLocationGeoPoint = new ParseGeoPoint(riderLocation.latitude, riderLocation.longitude);
+            ParseGeoPoint driverLocationGeoPoint = new ParseGeoPoint(driverLocation.latitude, driverLocation.longitude);
+
+            double distance = riderLocationGeoPoint.distanceInKilometersTo(driverLocationGeoPoint);
+            String infoText = "";
+
+            if (distance < 0.01) {
+                infoText = getString(R.string.driver_has_arrived);
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        cancelUber();
+                    }
+                }, 5000);
+            } else {
+                DecimalFormat formatter = new DecimalFormat("#.##");
+                String distanceFormatted = formatter.format(distance);
+                infoText = getString(R.string.driver_is) + " " + distanceFormatted + " km away";
+            }
+
+            infoTextView.setText(infoText);
+        }
+    }
+
+    private void getDriverLocation(final String driverUsername) {
         ParseUser.getQuery()
                 .whereMatches(Constants.USERNAME_KEY, driverUsername)
                 .findInBackground(new FindCallback<ParseUser>() {
@@ -180,6 +226,8 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                                 if (user.getParseGeoPoint(Constants.LOCATION_KEY) != null) {
                                     driverLocation = new LatLng(Objects.requireNonNull(user.getParseGeoPoint(Constants.LOCATION_KEY)).getLatitude(),
                                             Objects.requireNonNull(user.getParseGeoPoint(Constants.LOCATION_KEY)).getLongitude());
+
+                                    informUser();
                                     updateMap(riderLocation, driverLocation);
                                 }
                             }
@@ -202,8 +250,11 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
                                 if (e == null) {
                                     Toast.makeText(RiderActivity.this, getString(R.string.uber_canceled),
                                             Toast.LENGTH_SHORT).show();
+                                    callCancelUberButton.setVisibility(View.VISIBLE);
+                                    infoTextView.setText("");
                                     callCancelUberButton.setText(getString(R.string.call_uber));
                                     requestIsActive = false;
+                                    isDriverActive = false;
                                 } else {
                                     Toast.makeText(RiderActivity.this, e.getMessage(), Toast.LENGTH_SHORT)
                                             .show();
@@ -267,11 +318,14 @@ public class RiderActivity extends FragmentActivity implements OnMapReadyCallbac
 
     private void enableMyLocation() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                riderLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                updateMap(riderLocation, driverLocation);
+                if (!isDriverActive) {
+                    riderLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                    updateMap(riderLocation, driverLocation);
+                }
             }
 
             @Override

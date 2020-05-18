@@ -32,4 +32,7 @@
     <string name="logout">Logout</string>
     <string name="no_active_requests">No active requests</string>
     <string name="request_accepted">Request accepted</string>
+    <string name="driver_on_his_way">Driver on his way</string>
+    <string name="driver_is">The driver is</string>
+    <string name="driver_has_arrived">The driver has arrived</string>
 </resources>
