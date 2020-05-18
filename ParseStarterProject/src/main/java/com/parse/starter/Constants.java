@@ -11,4 +11,5 @@ public class Constants {
     public static final String RIDER_GEOPOINT_LONGITUDE_KEY = "riderGeopointLongitude";
     public static final String DRIVER_GEOPOINT_LATITUDE_KEY = "driverGeopointLatitude";
     public static final String DRIVER_GEOPOINT_LONGITUDE_KEY = "driverGeopointLongitude";
+    public static final String DRIVER_USERNAME_KEY = "driverUsername";
 }

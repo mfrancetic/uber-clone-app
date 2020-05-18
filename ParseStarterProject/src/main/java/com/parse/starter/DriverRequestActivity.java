@@ -3,29 +3,32 @@ package com.parse.starter;
 import androidx.fragment.app.FragmentActivity;
 
 import android.content.Intent;
-import android.graphics.drawable.BitmapDrawable;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.parse.ParseGeoPoint;
+import com.parse.DeleteCallback;
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
 
-import java.io.BufferedInputStream;
 import java.util.ArrayList;
+import java.util.List;
 
 public class DriverRequestActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -33,6 +36,7 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
     private LatLng riderLocation;
     private Button acceptRequestButton;
     private SupportMapFragment mapFragment;
+    private String riderUsername;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +46,7 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
         acceptRequestButton = findViewById(R.id.accept_request_button);
         acceptRequestButton.setVisibility(View.GONE);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-         mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map_driver);
 
         getDriverAndRiderLocation();
@@ -57,16 +61,47 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
         acceptRequestButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                navigateToDirections();
+                acceptRequestInDatabase();
             }
         });
     }
 
+    private void acceptRequestInDatabase() {
+        ParseQuery.getQuery(Constants.REQUEST_TABLE_KEY)
+                .whereMatches(Constants.USERNAME_KEY, riderUsername)
+                .findInBackground(new FindCallback<ParseObject>() {
+                    @Override
+                    public void done(List<ParseObject> objects, ParseException e) {
+                        if (e != null) {
+                            Toast.makeText(DriverRequestActivity.this, e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        } else if (objects.size() > 0) {
+                            for (ParseObject object : objects) {
+                                object.put(Constants.DRIVER_USERNAME_KEY, ParseUser.getCurrentUser().getUsername());
+                                object.saveInBackground(new SaveCallback() {
+                                    @Override
+                                    public void done(ParseException e) {
+                                        if (e == null) {
+                                            navigateToDirections();
+                                            Toast.makeText(DriverRequestActivity.this, getString(R.string.request_accepted),
+                                                    Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            Toast.makeText(DriverRequestActivity.this, e.getMessage(),
+                                                    Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+    }
+
     private void navigateToDirections() {
         Uri intentUri = Uri.parse("google.navigation:q=" + riderLocation.latitude + " , " + riderLocation.longitude);
-        Intent intent = new Intent(Intent.ACTION_VIEW, intentUri);
-        intent.setPackage("com.google.android.apps.maps");
-        startActivity(intent);
+        Intent navigateToDirectionsIntent = new Intent(Intent.ACTION_VIEW, intentUri);
+        navigateToDirectionsIntent.setPackage("com.google.android.apps.maps");
+        startActivity(navigateToDirectionsIntent);
     }
 
     private void getDriverAndRiderLocation() {
@@ -79,6 +114,8 @@ public class DriverRequestActivity extends FragmentActivity implements OnMapRead
             double riderLongitude = intent.getDoubleExtra(Constants.RIDER_GEOPOINT_LONGITUDE_KEY, 0);
             driverLocation = new LatLng(driverLatitude, driverLongitude);
             riderLocation = new LatLng(riderLatitude, riderLongitude);
+
+            riderUsername = intent.getStringExtra(Constants.USERNAME_KEY);
         }
     }
 

@@ -43,6 +43,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
     private LocationManager locationManager;
     private LocationListener locationListener;
     private TextView emptyTextView;
+    private ArrayList<String> riderUsernames;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +52,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
 
         setTitle(getString(R.string.nearby_requests));
         emptyTextView = findViewById(R.id.nearby_requests_empty_text_view);
+        riderUsernames = new ArrayList<>();
 
         setupListView();
         checkForPermission();
@@ -74,6 +76,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
                                     DecimalFormat format = new DecimalFormat("#.##");
                                     nearbyRequestsStrings.add(format.format(distance) + " " + getString(R.string.kilometer));
                                     nearbyRequestsGeopoints.add(geoPoint);
+                                    riderUsernames.add(object.getString(Constants.USERNAME_KEY));
                                     arrayAdapter.notifyDataSetChanged();
                                 }
                             }
@@ -112,6 +115,7 @@ public class DriverNearbyRequestsActivity extends AppCompatActivity {
                 goToDriverRequestActivityIntent.putExtra(Constants.RIDER_GEOPOINT_LONGITUDE_KEY, riderLongitude);
                 goToDriverRequestActivityIntent.putExtra(Constants.DRIVER_GEOPOINT_LATITUDE_KEY, driverLatitude);
                 goToDriverRequestActivityIntent.putExtra(Constants.RIDER_GEOPOINT_LONGITUDE_KEY, driverLongitude);
+                goToDriverRequestActivityIntent.putExtra(Constants.USERNAME_KEY, riderUsernames.get(position));
                 startActivity(goToDriverRequestActivityIntent);
             }
         });
