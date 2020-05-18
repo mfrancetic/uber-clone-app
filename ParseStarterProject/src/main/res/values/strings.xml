@@ -7,8 +7,7 @@
   ~ of patent rights can be found in the PATENTS file in the same directory.
   -->
 <resources>
-    <string name="app_name">Parse Starter Project</string>
-    <string name="hello_world">Hello World!</string>
+    <string name="app_name">Uber Clone</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_rider">Map</string>
     <string name="title_activity_driver_location">Map</string>
