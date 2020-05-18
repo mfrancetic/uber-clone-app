@@ -24,4 +24,9 @@
     <string name="cancel_uber">Cancel Uber</string>
     <string name="uber_called">Uber called</string>
     <string name="uber_canceled">Uber canceled</string>
+    <string name="nearby_requests">Nearby requests</string>
+    <string name="kilometer">km</string>
+    <string name="title_activity_driver_request">Map</string>
+    <string name="accept_request">Accept Request</string>
+    <string name="rider_location">Rider location</string>
 </resources>

@@ -75,8 +75,9 @@ public class MainActivity extends AppCompatActivity {
                     public void done(ParseException e) {
                         if (e == null) {
                             if (userType.equals(getString(R.string.rider))) {
-                                Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
-                                startActivity(goToRiderActivityIntent);
+                               goToRiderActivity();
+                            } else {
+                                goToDriverActivity();
                             }
                         } else {
                             e.printStackTrace();
@@ -104,10 +105,21 @@ public class MainActivity extends AppCompatActivity {
             if (ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY) != null) {
                 userType = ParseUser.getCurrentUser().getString(Constants.USER_TYPE_KEY);
                 if (userType != null && userType.equals(getString(R.string.rider))) {
-                    Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
-                    startActivity(goToRiderActivityIntent);
+                    goToRiderActivity();
+                } else if (userType != null && userType.equals(getString(R.string.driver))) {
+                    goToDriverActivity();
                 }
             }
         }
+    }
+
+    private void goToRiderActivity() {
+        Intent goToRiderActivityIntent = new Intent(MainActivity.this, RiderActivity.class);
+        startActivity(goToRiderActivityIntent);
+    }
+
+    private void goToDriverActivity() {
+        Intent goToDriverActivityIntent = new Intent(MainActivity.this, DriverNearbyRequestsActivity.class);
+        startActivity(goToDriverActivityIntent);
     }
 }

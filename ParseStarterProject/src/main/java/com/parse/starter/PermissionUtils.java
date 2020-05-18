@@ -1,6 +1,8 @@
 package com.parse.starter;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 
 class PermissionUtils {
@@ -15,9 +17,9 @@ class PermissionUtils {
         return false;
     }
 
-    public static void requestPermission(RiderActivity riderActivity, int locationPermissionRequestCode, String accessCourseLocation, boolean permissionMissing) {
+    public static void requestPermission(Activity activity, int locationPermissionRequestCode, String accessCourseLocation, boolean permissionMissing) {
         if (permissionMissing) {
-            riderActivity.requestPermissions(new String[]{accessCourseLocation}, locationPermissionRequestCode);
+            activity.requestPermissions(new String[]{accessCourseLocation}, locationPermissionRequestCode);
         }
     }
 }
